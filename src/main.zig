@@ -1,7 +1,6 @@
 const r4os = @import("r4os");
 
 var engine_sends: u64 = 0;
-var engine_renders: u64 = 0;
 var engine_stops: u64 = 0;
 var engine_last_result: i32 = 0;
 var engine: r4os.abi.SynthEngine = .{};
@@ -12,11 +11,10 @@ comptime {
 
 export fn midi_init(api: *const r4os.r4dev.DriverApi) callconv(.c) i32 {
     var ctx = r4os.r4dev.DriverContext.init(api);
-    ctx.logInfo("MIDI synth placeholder init");
+    ctx.logInfo("MIDI event router init (no PCM renderer)");
     engine = .{
         .flags = r4os.abi.synth_engine_flag_midi,
         .midi_send = midiSend,
-        .render = midiRender,
         .stop = midiStop,
         .status = midiStatus,
     };
@@ -39,13 +37,6 @@ fn midiSend(context: ?*anyopaque, channel: u8, status: u8, data1: u8, data2: u8)
     return 0;
 }
 
-fn midiRender(context: ?*anyopaque) callconv(.c) i32 {
-    _ = context;
-    engine_renders +%= 1;
-    engine_last_result = 0;
-    return 0;
-}
-
 fn midiStop(context: ?*anyopaque) callconv(.c) i32 {
     _ = context;
     engine_stops +%= 1;
@@ -58,7 +49,7 @@ fn midiStatus(context: ?*anyopaque, out: *r4os.abi.SynthEngineStatus) callconv(.
     out.* = .{
         .active = 1,
         .sends = engine_sends,
-        .renders = engine_renders,
+        .renders = 0,
         .stops = engine_stops,
         .last_result = engine_last_result,
     };
